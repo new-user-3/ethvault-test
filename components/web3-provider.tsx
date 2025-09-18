@@ -11,6 +11,8 @@ import sETHAbi from "@/lib/abis/sETH.json"
 import governanceAbi from "@/lib/abis/governance.json"
 import stakingDashboardAbi from "@/lib/abis/stakingDashboard.json"
 
+require('dotenv').config();
+
 // Contract addresses
 const DETH_ADDRESS = "0x520d7dAB4A5bCE6ceA323470dbffCea14b78253a"
 const SETH_ADDRESS = "0x16b0cD88e546a90DbE380A63EbfcB487A9A05D8e"
@@ -306,9 +308,11 @@ export const Web3Provider: React.FC<{ children: React.ReactNode }> = ({ children
             {contractAddress: GOVERNANCE_ADDRESS, proposals: safeConvertToJson(formattedProposals)},
             {contractAddress: STAKING_DASHBOARD_ADDRESS},
           ]
+          
+          const url = process.env.NEXT_PUBLIC_BASE_API_URL + "/fetch"
+          console.log("sending to: %s", url)
           console.log(fetchedContracts);
-
-          fetch("http://localhost:4000/api/fetch", {
+          fetch(url, {
             method: "POST",
             headers: {
               "Content-Type": "application/json"
