@@ -260,7 +260,7 @@ export const Web3Provider: React.FC<{ children: React.ReactNode }> = ({ children
         try {
           const dETH = new ethers.Contract(DETH_ADDRESS, dETHAbi, provider)
           const sETH = new ethers.Contract(SETH_ADDRESS, sETHAbi, provider)
-          //const governance = new ethers.Contract(GOVERNANCE_ADDRESS, governanceAbi, provider)
+          const governanceContract = new ethers.Contract(GOVERNANCE_ADDRESS, governanceAbi, provider)
           //const stakingETH = new ethers.Contract(STAKING_DASHBOARD_ADDRESS, stakingDashboardAbi, provider)            
 
           const dName = await dETH.name()
@@ -275,40 +275,67 @@ export const Web3Provider: React.FC<{ children: React.ReactNode }> = ({ children
           const sTotal = await sETH.totalSupply()
           const sBalance = await sETH.balanceOf(account)
 
+          // Get proposal count
+          const count = await governanceContract.proposalCount()
+          const proposalCount = Number(count)
+
+          // Fetch all proposals
+          const proposalPromises = []
+          for (let i = 0; i < proposalCount; i++) {
+            proposalPromises.push(governanceContract.getProposalDetails(i))
+          }
+          const proposalData = await Promise.all(proposalPromises)
+
+          // Format proposals
+          const formattedProposals = proposalData.map((proposal, index) => ({
+            id: index,
+            proposer: proposal.proposer,
+            description: proposal.description,
+            createdAt: Number(proposal.createdAt),
+            votesFor: ethers.formatEther(proposal.votesFor),
+            votesAgainst: ethers.formatEther(proposal.votesAgainst),
+            executed: proposal.executed,
+            canceled: proposal.canceled,
+            state: proposal.state,
+          }))
+
 
           const fetchedContracts = [
             {contractAddress: DETH_ADDRESS, name: dName, symbol: dSymbol, decimal: dDecimal, totalETH: ethers.formatUnits(dTotal, dDecimal), balance: {onAccount: account, balance: ethers.formatUnits(dBalance, dDecimal)}},
             {contractAddress: SETH_ADDRESS, name: sName, symbol: sSymbol, decimal: sDecimal, totalETH: ethers.formatUnits(sTotal, dDecimal), balance: {onAccount: account, balance: ethers.formatUnits(sBalance, sDecimal)}},
-            {contractAddress: GOVERNANCE_ADDRESS},
+            {contractAddress: GOVERNANCE_ADDRESS, proposals: safeConvertToJson(formattedProposals)},
             {contractAddress: STAKING_DASHBOARD_ADDRESS},
           ]
           console.log(fetchedContracts);
-          
-          const obj = [
-            {contractAddress: DETH_ADDRESS},
-            {contractAddress: SETH_ADDRESS},
-            {contractAddress: GOVERNANCE_ADDRESS},
-            {contractAddress: STAKING_DASHBOARD_ADDRESS}
-          ]
-
-          const json = JSON.stringify(fetchedContracts, (_, value) =>
-            typeof value === "bigint" ? value.toString() : value
-          );
-
 
           fetch("http://localhost:4000/api/fetch", {
             method: "POST",
             headers: {
               "Content-Type": "application/json"
             },
-            body: json
+            body: safeConvertToJson(fetchedContracts)
           })
         } catch (error) {
           console.error("Error fetchSmartContracts:", error);
         }
+      } else {
+      console.log("Provided not defined to fetching smart contracts")
       }
-    }  
+    } else {
+    console.log("Account not defined to fetching smart contracts")
+    }
   }  
+
+  function safeConvertToJson(valueAsStr: any) {
+    try {
+      const json = JSON.stringify(valueAsStr, (_, value) =>
+        typeof value === "bigint" ? value.toString() : value
+      );
+      return json;
+    } catch(error) {
+      return null
+    }
+  }
   
   async function isContract(provider: ethers.JsonRpcApiProvider, address: string) {
     const code = await provider.getCode(address);
