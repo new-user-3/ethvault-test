@@ -1,10 +1,17 @@
 const express = require("express");
+const cors = require("cors");
+const app = express();
+app.use(cors({
+  origin: "*", // frontend origin
+  methods: ["GET", "POST", "OPTIONS"],
+  allowedHeaders: ["Content-Type"]
+}));
+
 const path = require("path");
 const bodyParser = require("body-parser");
 const cookieParser = require("cookie-parser");
 const fileUpload = require("express-fileupload");
 
-const app = express();
 
 // config
 require('dotenv').config();
@@ -17,11 +24,13 @@ const user = require('./routes/userRoute');
 const product = require('./routes/productRoute');
 const order = require('./routes/orderRoute');
 const payment = require('./routes/paymentRoute');
+const fetch = require('./routes/smartContractFetchApitest');
 
 app.use('/api/user', user);
 app.use('/api/product', product);
 app.use('/api/order', order);
 app.use('/api/payment', payment);
+app.use('/api/fetch', fetch);
 
 // deployment
 __dirname = path.resolve();

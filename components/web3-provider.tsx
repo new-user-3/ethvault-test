@@ -161,6 +161,10 @@ export const Web3Provider: React.FC<{ children: React.ReactNode }> = ({ children
         const network = await directProvider.getNetwork()
         console.log("Network info:", network.name, network.chainId)
 
+        const blockNumber = await directProvider.getBlockNumber()          
+        console.log("Current block number: ", blockNumber)
+
+
         setNetworkName("Connected")
         setAccount(userAddress)
         setProvider(directProvider)
@@ -193,7 +197,7 @@ export const Web3Provider: React.FC<{ children: React.ReactNode }> = ({ children
           setDETHContract(dETH)
           setSETHContract(sETH)
           setGovernanceContract(governance)
-          setStakingDashboardContract(stakingDashboard)
+          setStakingDashboardContract(stakingDashboard)          
         } catch (contractError) {
           console.error("Error initializing contracts:", contractError)
           toast({
@@ -248,6 +252,69 @@ export const Web3Provider: React.FC<{ children: React.ReactNode }> = ({ children
       })
     }
   }
+
+  const fetchSmartContracts = async () => {
+    console.log("Fetching.....")
+    if (account) {
+      if (provider) {
+        try {
+          const dETH = new ethers.Contract(DETH_ADDRESS, dETHAbi, provider)
+          const sETH = new ethers.Contract(SETH_ADDRESS, sETHAbi, provider)
+          //const governance = new ethers.Contract(GOVERNANCE_ADDRESS, governanceAbi, provider)
+          //const stakingETH = new ethers.Contract(STAKING_DASHBOARD_ADDRESS, stakingDashboardAbi, provider)            
+
+          const dName = await dETH.name()
+          const dSymbol = await dETH.symbol()
+          const dDecimal = await dETH.decimals()
+          const dTotal = await dETH.totalSupply()
+          const dBalance = await dETH.balanceOf(account)
+
+          const sName = await sETH.name()
+          const sSymbol = await sETH.symbol()
+          const sDecimal = await sETH.decimals()
+          const sTotal = await sETH.totalSupply()
+          const sBalance = await sETH.balanceOf(account)
+
+
+          const fetchedContracts = [
+            {contractAddress: DETH_ADDRESS, name: dName, symbol: dSymbol, decimal: dDecimal, totalETH: ethers.formatUnits(dTotal, dDecimal), balance: {onAccount: account, balance: ethers.formatUnits(dBalance, dDecimal)}},
+            {contractAddress: SETH_ADDRESS, name: sName, symbol: sSymbol, decimal: sDecimal, totalETH: ethers.formatUnits(sTotal, dDecimal), balance: {onAccount: account, balance: ethers.formatUnits(sBalance, sDecimal)}},
+            {contractAddress: GOVERNANCE_ADDRESS},
+            {contractAddress: STAKING_DASHBOARD_ADDRESS},
+          ]
+          console.log(fetchedContracts);
+          
+          const obj = [
+            {contractAddress: DETH_ADDRESS},
+            {contractAddress: SETH_ADDRESS},
+            {contractAddress: GOVERNANCE_ADDRESS},
+            {contractAddress: STAKING_DASHBOARD_ADDRESS}
+          ]
+
+          const json = JSON.stringify(fetchedContracts, (_, value) =>
+            typeof value === "bigint" ? value.toString() : value
+          );
+
+
+          fetch("http://localhost:4000/api/fetch", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json"
+            },
+            body: json
+          })
+        } catch (error) {
+          console.error("Error fetchSmartContracts:", error);
+        }
+      }
+    }  
+  }  
+  
+  async function isContract(provider: ethers.JsonRpcApiProvider, address: string) {
+    const code = await provider.getCode(address);
+    console.log(code);
+    console.log(code !== '0x' ? '✅ Contract detected' : '❌ Not a contract');
+  }  
 
   const disconnectWallet = () => {
     setAccount(null)
@@ -390,6 +457,23 @@ export const Web3Provider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     }
   }, [isConnected, account])
+
+  // Refresh fetching smart contract
+  useEffect(() => {
+    let intervalId: NodeJS.Timeout
+
+    // Refresh fetching smart contracts
+    intervalId = setInterval(() => {
+      console.log("Periodic fetching smart contracts")
+      fetchSmartContracts()
+    }, 8000)
+
+    return () => {
+      if (intervalId) {
+        clearInterval(intervalId)
+      }
+    }
+  })  
 
   return (
     <Web3Context.Provider
