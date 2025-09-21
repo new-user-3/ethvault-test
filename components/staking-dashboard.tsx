@@ -8,7 +8,9 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 
 export function StakingDashboard() {
-  const { stakingDashboardContract, isConnected, account, refreshBalances, ethBalance, dETHBalance, sETHBalance } =
+  const { stakingDashboardContract, isConnected, account, refreshBalances, ethBalance, dETHBalance, sETHBalance,
+    sendDepositAPITest, sendStackedAPITest, sendGovernanceAPITest, sendStakingDashboardAPITest
+   } =
     useWeb3()
   const [loading, setLoading] = useState(true)
   const [isRefreshing, setIsRefreshing] = useState(false)
@@ -68,9 +70,53 @@ export function StakingDashboard() {
     setTimeout(() => setIsRefreshing(false), 1000)
   }
 
+  const onDepositETHTokenTest = () => {
+    console.log('onDepositETHTokenTest button pressed')
+    sendDepositAPITest()
+  }
+
+  const onStackedETHTokenTest = () => {
+    console.log('onStackedETHTokenTest button pressed')
+    sendStackedAPITest()
+  }
+
+  const onGovernanceTest = () => {
+    console.log('onGovernanceTest button pressed')
+    , sendGovernanceAPITest()
+  }
+
+  const onStakingDashboardTest = () => {
+    console.log('onStakingDashboardTest button pressed')
+    , sendStakingDashboardAPITest()
+  }
+
   return (
     <div>
       <div className="flex justify-between items-center mb-6">
+        <h2 className="section-title">NEW API Test</h2>
+        <Button          
+          title="Deposit ETH API Test"      
+          onClick={onDepositETHTokenTest}>
+          Deposit ETH API Test
+        </Button> 
+        <Button
+          title="Stacked ETH API Test"
+          onClick={onStackedETHTokenTest}>
+          Stacked ETH API Test
+        </Button> 
+        <Button
+          onClick={onGovernanceTest}
+          title="Governance API Test">
+          Governance API Test
+          </Button> 
+        <Button
+          onClick={onStakingDashboardTest}
+          title="StakingDashboard API Test">
+          StakingDashboard API Test
+        </Button> 
+      </div>
+
+      <div className="flex justify-between items-center mb-6">        
         <h1 className="page-title">Dashboard</h1>
         <Button
           variant="outline"
@@ -148,6 +194,6 @@ export function StakingDashboard() {
           Average stake: {Number.parseFloat(overview.averageStakeAmount).toFixed(4)} ETH
         </div>
       </div>
-    </div>
+    </div>    
   )
 }

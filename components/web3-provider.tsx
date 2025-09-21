@@ -11,6 +11,7 @@ import sETHAbi from "@/lib/abis/sETH.json"
 import governanceAbi from "@/lib/abis/governance.json"
 import stakingDashboardAbi from "@/lib/abis/stakingDashboard.json"
 
+const axios = require('axios');
 require('dotenv').config();
 
 // Contract addresses
@@ -37,6 +38,10 @@ type Web3ContextType = {
   chainId: number | null
   refreshBalances: () => Promise<void>
   networkName: string
+  sendDepositAPITest: () => Promise<void>
+  sendStackedAPITest: () => Promise<void>
+  sendGovernanceAPITest: () => Promise<void>
+  sendStakingDashboardAPITest: () => Promise<void>
 }
 
 const Web3Context = createContext<Web3ContextType>({
@@ -53,6 +58,10 @@ const Web3Context = createContext<Web3ContextType>({
   chainId: null,
   refreshBalances: async () => {},
   networkName: "",
+  sendDepositAPITest: async () => {},
+  sendStackedAPITest: async () => {},
+  sendGovernanceAPITest: async () => {},
+  sendStakingDashboardAPITest: async () => {},
 })
 
 export const useWeb3 = () => useContext(Web3Context)
@@ -255,90 +264,44 @@ export const Web3Provider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }
 
-  const fetchSmartContracts = async () => {
-    console.log("Fetching.....")
-    if (account) {
-      if (provider) {
-        try {
-          const dETH = new ethers.Contract(DETH_ADDRESS, dETHAbi, provider)
-          const sETH = new ethers.Contract(SETH_ADDRESS, sETHAbi, provider)
-          const governanceContract = new ethers.Contract(GOVERNANCE_ADDRESS, governanceAbi, provider)
-          //const stakingETH = new ethers.Contract(STAKING_DASHBOARD_ADDRESS, stakingDashboardAbi, provider)            
 
-          const dName = await dETH.name()
-          const dSymbol = await dETH.symbol()
-          const dDecimal = await dETH.decimals()
-          const dTotal = await dETH.totalSupply()
-          const dBalance = await dETH.balanceOf(account)
-
-          const sName = await sETH.name()
-          const sSymbol = await sETH.symbol()
-          const sDecimal = await sETH.decimals()
-          const sTotal = await sETH.totalSupply()
-          const sBalance = await sETH.balanceOf(account)
-
-          // Get proposal count
-          const count = await governanceContract.proposalCount()
-          const proposalCount = Number(count)
-
-          // Fetch all proposals
-          const proposalPromises = []
-          for (let i = 0; i < proposalCount; i++) {
-            proposalPromises.push(governanceContract.getProposalDetails(i))
-          }
-          const proposalData = await Promise.all(proposalPromises)
-
-          // Format proposals
-          const formattedProposals = proposalData.map((proposal, index) => ({
-            id: index,
-            proposer: proposal.proposer,
-            description: proposal.description,
-            createdAt: Number(proposal.createdAt),
-            votesFor: ethers.formatEther(proposal.votesFor),
-            votesAgainst: ethers.formatEther(proposal.votesAgainst),
-            executed: proposal.executed,
-            canceled: proposal.canceled,
-            state: proposal.state,
-          }))
-
-
-          const fetchedContracts = [
-            {contractAddress: DETH_ADDRESS, name: dName, symbol: dSymbol, decimal: dDecimal, totalETH: ethers.formatUnits(dTotal, dDecimal), balance: {onAccount: account, balance: ethers.formatUnits(dBalance, dDecimal)}},
-            {contractAddress: SETH_ADDRESS, name: sName, symbol: sSymbol, decimal: sDecimal, totalETH: ethers.formatUnits(sTotal, dDecimal), balance: {onAccount: account, balance: ethers.formatUnits(sBalance, sDecimal)}},
-            {contractAddress: GOVERNANCE_ADDRESS, proposals: safeConvertToJson(formattedProposals)},
-            {contractAddress: STAKING_DASHBOARD_ADDRESS},
-          ]
-          
-          const url = process.env.NEXT_PUBLIC_BASE_API_URL + "/fetch"
-          console.log("sending to: %s", url)
-          console.log(fetchedContracts);
-          fetch(url, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json"
-            },
-            body: safeConvertToJson(fetchedContracts)
-          })
-        } catch (error) {
-          console.error("Error fetchSmartContracts:", error);
-        }
-      } else {
-      console.log("Provided not defined to fetching smart contracts")
-      }
-    } else {
-    console.log("Account not defined to fetching smart contracts")
-    }
-  }  
-
-  function safeConvertToJson(valueAsStr: any) {
+  async function sendAPITest(apiUrl: string, obj: any) {
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_API_URL + "/fetch"
+    const url = baseUrl + apiUrl
     try {
-      const json = JSON.stringify(valueAsStr, (_, value) =>
-        typeof value === "bigint" ? value.toString() : value
-      );
-      return json;
-    } catch(error) {
-      return null
+      const response = await axios.post(url, obj);
+      console.log('Response:', response.data);
+    } catch (error) {
+      if (error instanceof Error) {
+        console.error(error.message);
+      } else {
+        console.error('Unknown error:', error);
+      }
     }
+  }
+
+  async function sendDepositAPITest() {
+    sendAPITest("/deposit", {
+      title: 'sendDepositAPITest'
+    })
+  }
+
+  async function sendStackedAPITest() {
+    sendAPITest("/stacked", {
+      title: 'sendStackedAPITest'
+    })
+  }
+
+  async function sendGovernanceAPITest() {
+    sendAPITest("/governance", {
+      title: 'sendGovernanceAPITest'
+    })
+  }
+
+  async function sendStakingDashboardAPITest() {
+    sendAPITest("/stakingdashboard", {
+      title: 'sendStakingDashboardAPITest'
+    })
   }
   
   async function isContract(provider: ethers.JsonRpcApiProvider, address: string) {
@@ -489,23 +452,6 @@ export const Web3Provider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, [isConnected, account])
 
-  // Refresh fetching smart contract
-  useEffect(() => {
-    let intervalId: NodeJS.Timeout
-
-    // Refresh fetching smart contracts
-    intervalId = setInterval(() => {
-      console.log("Periodic fetching smart contracts")
-      fetchSmartContracts()
-    }, 8000)
-
-    return () => {
-      if (intervalId) {
-        clearInterval(intervalId)
-      }
-    }
-  })  
-
   return (
     <Web3Context.Provider
       value={{
@@ -522,6 +468,10 @@ export const Web3Provider: React.FC<{ children: React.ReactNode }> = ({ children
         chainId,
         refreshBalances,
         networkName,
+        sendDepositAPITest,
+        sendStackedAPITest,
+        sendGovernanceAPITest,
+        sendStakingDashboardAPITest
       }}
     >
       {children}
