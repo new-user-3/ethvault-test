@@ -123,7 +123,20 @@ router.post('/governance', async (req, res) => {
 })
 
 async function getStakingDashboardData() {
-  return JSON.stringify({contractAddress: STAKING_DASHBOARD_CONTRACT_ADDRESS})
+  const overview = await contractStaking.getStakingOverview()
+  const leaderboard = await contractStaking.getLeaderboard(10)
+  const stakerDetails = await contractStaking.getStakerDetails(MY_ETH_ADDRESS)
+  return safeConvertToJson({
+    contractAddress: STAKING_DASHBOARD_CONTRACT_ADDRESS,
+    overview: {
+      totalETHDeposited: ethers.formatEther(overview[0]),
+      totalETHStaked: ethers.formatEther(overview[1]),
+      totalStakers: overview[2],
+      averageStakeAmount: ethers.formatEther(overview[3])
+    },
+    leaderboard: leaderboard,
+    stakerDetails: stakerDetails
+  })
 }
 
 router.post('/stakingdashboard', async (req, res) => {
