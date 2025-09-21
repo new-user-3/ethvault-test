@@ -304,12 +304,6 @@ export const Web3Provider: React.FC<{ children: React.ReactNode }> = ({ children
     })
   }
   
-  async function isContract(provider: ethers.JsonRpcApiProvider, address: string) {
-    const code = await provider.getCode(address);
-    console.log(code);
-    console.log(code !== '0x' ? '✅ Contract detected' : '❌ Not a contract');
-  }  
-
   const disconnectWallet = () => {
     setAccount(null)
     setSigner(null)
