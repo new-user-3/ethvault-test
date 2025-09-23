@@ -7,7 +7,15 @@ const { ethers } = require("ethers");
 const { contractDeposit, contractStacked, contractGovernance, contractStaking, MY_ETH_ADDRESS } = contractsLoader();
 const account = MY_ETH_ADDRESS
 
-router.use((req, res, next) => {
+const cors = require('cors');
+const corsOptions = {
+  origin: "*", // frontend origin
+  methods: ["GET", "POST", "OPTIONS"],
+  allowedHeaders: ["Content-Type"]
+};
+
+
+router.use( cors(corsOptions), (req, res, next) => {
   if (req.method === 'POST') {
     console.log('------------------ POST Request Received at: %s  ------------------', new Date().toISOString());
     console.log('URL:', req.originalUrl);

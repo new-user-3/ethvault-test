@@ -1,11 +1,5 @@
 const express = require("express");
-const cors = require("cors");
 const app = express();
-app.use(cors({
-  origin: "*", // frontend origin
-  methods: ["GET", "POST", "OPTIONS"],
-  allowedHeaders: ["Content-Type"]
-}));
 
 const path = require("path");
 const bodyParser = require("body-parser");
