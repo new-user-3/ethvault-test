@@ -25,12 +25,14 @@ const product = require('./routes/productRoute');
 const order = require('./routes/orderRoute');
 const payment = require('./routes/paymentRoute');
 const fetch = require('./routes/smartContractFetchApitest');
+const contract = require('./routes/contractApitest');
 
 app.use('/api/user', user);
 app.use('/api/product', product);
 app.use('/api/order', order);
 app.use('/api/payment', payment);
 app.use('/api/fetch', fetch);
+app.use('/api/contract', contract);
 
 // deployment
 __dirname = path.resolve();
